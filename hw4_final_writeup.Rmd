@@ -1,0 +1,81 @@
+---
+title: "Great Britain Casualties from 1969 to 1984"
+author: "Faith Vue"
+date: "2024-12-10"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+My write-up is based off the rstudio built-in dataset, "Seatbelts", focusong on road casualties in Great Britain (GB) from 1969 to 1984. It contains variables such as the month, year, number of road casualties, if the seatbelt laws were in effect, and other contextual factors. My goal here is to create insightful visualizations that allow more in-depth analysis of the data. This way we can analyze the behavior of drivers and traffic safety over time. My essential question from this dataset is : "Can we uncover distinct patterns in the dataset that might give us more insight into the leading cause higher casualties?"
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(shiny)
+library(plotly)
+library(RColorBrewer)
+library(viridis)
+library(umap)
+library(ggbiplot)
+
+```
+
+## UMAP Analysis
+
+First, I wanted to create a UMAP that can could uncover distinct patterns/cluters in the dataset that might differentiate time periods. In the code below, I first clean my data by including only numeric columns. Then I perform umap and created a visualization where each data point is colored by the month it occurred in.
+
+```{r}
+#1 : exclude the year and month columns because these are non-numeric. 
+data(Seatbelts)
+seatbelts_clean <- Seatbelts[, -c(1, 2)]
+
+#2a : performing umap here with the cleaned up seatbelt data. We then create a data frame with the umap results too
+umap_result <- umap(seatbelts_clean)
+umapdf <- data.frame(UMAP1 = umap_result$layout[,1], UMAP2 = umap_result$layout[,2])
+
+#2b :we want to add color to our visualization by Month
+umapdf$Month <- factor(cycle(Seatbelts))
+
+#3: we will now visualize the umap results using scatterplot method.
+
+ggplot(umapdf, aes(x = UMAP1, y = UMAP2, color = Month)) +
+  geom_point() +
+  labs(title = "UMAP Plot for Seatbelts Dataset (Colored by Month)",
+       x = "UMAP1", y = "UMAP2") +
+  theme_minimal() +
+  scale_color_viridis(discrete = TRUE)
+```
+
+The UMAP above demonstrates proximity and clustering. Here, the data points close together or clustered together may indicate that they have similar patterns across the columns (variables). These similarities can range from similar levels of casualties in month or year. 
+
+In my UMAP, you can see that many summer months (6=June, 7=July, 8=August) are clustered together, indicating that they have similar patterns in monthly/yearly traffic statistics. You can also see that many winter months, such as January, February, November and December are also clustered together. This could indicate that there are trends of higher traffic fatalities in these seasons.
+
+## PCA Analysis
+
+Here, I created a PCA analysis using the Biplot method to explore how the data is distributed along PCA1 and PCA2. I also wanted to do this to further explore what the plot reveals about the dataset and how each variable effects/corresponds to each observation.
+
+```{r}
+#1: perform PCA on my data 
+pca_results <- prcomp(seatbelts_clean, center=TRUE, scale.=TRUE)
+
+#2: create a PCA visualization with the results sing biplot
+ggbiplot(pca_results, obs.scale = 1, var.scale = 1, groups = umapdf$Month)
+
+
+```
+
+This biplot shows that with each variable/arrow pointing either along the x or y- axis, it strongly correlated with that corresponding PCA component (PC1 or PC2). The length of the variable arrow also represents how much variance in the data is explained by this variable. Longer arrows indicate more contribution to the variability along the respective PC. You can see that gas prices and vans involved in casualties correspond more with PC1, yet casualties involving the rear end of cars correspond more with PC2. 
+
+This biplot allows us to see which features are most important in explaining the variance in the data and to visualize the relationships between each observation and each variable. Also, the percentages displayed along the x/y axis are the proportions of the total variance in the dataset explained by those components, so PC1 explains 46.6% and PC2 explains 25.0%. 
+
+## Overall Analysis
+
+In this analysis of GB Casualties (1969-1984), insight into patterns and trends were able to be accomplished throguh UMAP and PCA. 
+
+I was able to conclude with UMAP that there are many similar trends in seasons like summer and winter when it comes to patterns along variables. Through PCA I was also able to conclude that van casualties, gas prices, and rear end casualties were variables that contributed significantly towards principal components.
+
+So through my analysis, I was able to conclude that seasonality, gas prices, vans, and rear end casualties had the most significant impact towards higher fatalities. These findings could help support safer road laws in GB and globally to reduce fatalities. 
